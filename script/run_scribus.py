@@ -7,12 +7,17 @@ import os
 import math
 import scribus
 import simplebin
+import inspect
 from collections import defaultdict
 
-DATA_FILE = "data.json"
-CACHE_FILE = "cache.json"
-MANUEL_PROCESSING_FILE = "manual_processing.json"
-FILES = "lily_output/"
+PWD = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+def pwd(path):
+    return os.path.join(PWD, path);
+
+DATA_FILE = pwd("data.json")
+CACHE_FILE = pwd("cache.json")
+MANUEL_PROCESSING_FILE = pwd("manual_processing.json")
+FILES = pwd("lily_output/")
 FAST = False  # use this to debug
 SPACING_SONGS = 10
 EFFECTIVE_PAGE_HEIGHT = 255 + SPACING_SONGS
@@ -23,21 +28,21 @@ BASELINE_GRID = 5
 
 
 def init():
-    scribus.openDoc("init.sla")
+    scribus.openDoc(pwd("init.sla"))
     scribus.saveDocAs("/tmp/{}.sla".format(time.time()))
     scribus.setUnit(scribus.UNIT_MM)
 
 
 def front_matter():
     # load pages from other document
-    if not os.path.exists("front_matter.sla"):
+    if not os.path.exists(pwd("front_matter.sla")):
         print "not front matter, file not found!"
         return
-    scribus.openDoc("front_matter.sla")
+    scribus.openDoc(pwd("front_matter.sla"))
     pages = scribus.pageCount()
     scribus.closeDoc()
     scribus.importPage(
-        "front_matter.sla",  # filename
+        pwd("front_matter.sla"),  # filename
         tuple(range(1, pages+1)),  # range of pages to import
         1,  # insert (1) or replace(0)
         0,  # where to insert
@@ -48,7 +53,7 @@ def front_matter():
 def fit_height(textbox):
     # come to a state that the text box does not overflow:
     width, height = scribus.getSize(textbox)
-    to_add = height
+    to_add = height + 1
     while scribus.textOverflows(textbox):
         scribus.sizeObject(width, height + to_add, textbox)
         to_add = to_add * 2
@@ -204,7 +209,7 @@ def load_song(data, offset, settings):
 def create_toc(data):
     if not scribus.objectExists("TOC"):
         new_page()
-        page_width, page_height, margin_top, margin_left, margin_right, margin_bottom = page_size_margin(page_num)
+        page_width, page_height, margin_top, margin_left, margin_right, margin_bottom = page_size_margin(1)
         toc = scribus.createText(margin_left, margin_top, page_width-margin_right-margin_left, page_height-margin_top-margin_bottom)
         scribus.setNewName("TOC", toc)
         scribus.insertText("provide a textframe with name 'TOC' in front_matter.sla and i will not create the toc at the end of the document", 0, "TOC")
